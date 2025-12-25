@@ -1,0 +1,515 @@
+#!/bin/bash
+# Script de préparation du projet pour GitHub
+# Exécuter : bash prepare-github.sh
+
+echo "📦 Préparation du Système de Gestion de Webinaires pour GitHub..."
+
+# Créer le dossier du projet
+PROJECT_NAME="webinar-management-system"
+rm -rf $PROJECT_NAME
+mkdir $PROJECT_NAME
+cd $PROJECT_NAME
+
+# Créer la structure de dossiers
+echo "📁 Création de la structure..."
+mkdir -p config
+mkdir -p public/{css,js,uploads}
+mkdir -p src/{Controllers,Models,Helpers}
+mkdir -p src/Views/{layout,auth,dashboard,webinars,languages,users,reports}
+mkdir -p docs
+
+# Créer .gitignore
+cat > .gitignore << 'EOF'
+# Configuration
+config/database.php
+.env
+
+# Logs
+*.log
+
+# Uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Cache
+cache/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+vendor/
+composer.lock
+EOF
+
+# Créer README.md principal
+cat > README.md << 'EOF'
+# 🎯 Système de Gestion de Webinaires
+
+[![PHP Version](https://img.shields.io/badge/PHP-8.0%2B-blue)](https://www.php.net/)
+[![MySQL](https://img.shields.io/badge/MySQL-5.7%2B-orange)](https://www.mysql.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+Application web PHP complète pour la gestion des demandes de création de webinaires avec système d'authentification par rôles, workflow d'approbation et génération de rapports Zoom.
+
+![Dashboard Preview](docs/screenshot-dashboard.png)
+
+## ✨ Fonctionnalités
+
+### 🔐 Authentification & Autorisation
+- **3 rôles** : Administrateur, Gestionnaire, Demandeur
+- Sessions sécurisées avec protection CSRF
+- Mots de passe hashés (bcrypt)
+
+### 📝 Gestion des Webinaires
+- Titres multilingues (FR obligatoire, EN optionnel)
+- **4 statuts** : Soumise → En cours → Approuvée/Rejetée
+- Langues d'interprétation (relation many-to-many)
+- Liens et mots de passe Zoom sécurisés
+- Compteurs de participants Zoom
+
+### 📊 Rapports & Analytics
+- Rapports mensuels et annuels
+- Export CSV et Excel
+- Statistiques inscrits vs participants Zoom
+- Dashboard avec métriques en temps réel
+
+### 📜 Audit & Sécurité
+- Journal d'audit complet
+- Traçabilité de toutes les actions
+- Protection contre injections SQL (PDO)
+- Protection XSS (htmlspecialchars)
+
+### 🌐 API REST
+- Endpoints JSON documentés
+- Authentification par token
+- CRUD complet des webinaires
+
+## 🚀 Installation rapide
+
+### Prérequis
+- PHP 8.0+
+- MySQL 5.7+ ou MariaDB 10.3+
+- Apache 2.4+ ou Nginx
+- Extensions PHP : PDO, PDO_MySQL, mbstring, json
+
+### Installation en 5 minutes
+
+```bash
+# 1. Cloner le dépôt
+git clone https://github.com/VOTRE-USERNAME/webinar-management-system.git
+cd webinar-management-system
+
+# 2. Créer la base de données
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE webinar_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'webinar_user'@'localhost' IDENTIFIED BY 'VotreMotDePasse';
+GRANT ALL PRIVILEGES ON webinar_system.* TO 'webinar_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+```bash
+# 3. Importer le schéma
+mysql -u webinar_user -p webinar_system < database.sql
+
+# 4. Configurer l'application
+cp config/database.php.example config/database.php
+nano config/database.php  # Modifier les credentials
+
+# 5. Définir les permissions
+chmod -R 755 .
+chmod -R 775 public/uploads
+chown -R www-data:www-data .
+
+# 6. Configurer Apache (voir docs/INSTALLATION.md)
+```
+
+### Accès
+
+Ouvrez : **http://localhost/webinar-management-system/public**
+
+**Comptes de démonstration :**
+| Rôle | Email | Mot de passe |
+|------|-------|--------------|
+| Admin | admin@webinar.com | Admin123! |
+| Gestionnaire | gestionnaire@webinar.com | Admin123! |
+| Demandeur | demandeur@webinar.com | Admin123! |
+
+⚠️ **Changez ces mots de passe en production !**
+
+## 📖 Documentation
+
+- [Guide d'installation complet](docs/INSTALLATION.md)
+- [Guide d'utilisation](docs/USER_GUIDE.md)
+- [Documentation API](docs/API.md)
+- [Guide de sécurité](docs/SECURITY.md)
+
+## 🏗️ Architecture
+
+```
+webinar-management-system/
+├── config/              # Configuration de l'application
+├── public/              # Point d'entrée web
+│   ├── index.php       # Routeur principal
+│   ├── css/            # Styles
+│   ├── js/             # Scripts
+│   └── uploads/        # Fichiers uploadés
+├── src/
+│   ├── Controllers/    # Logique métier
+│   ├── Models/         # Accès aux données
+│   ├── Views/          # Templates HTML
+│   └── Helpers/        # Utilitaires
+├── database.sql        # Schéma de base de données
+└── docs/               # Documentation
+```
+
+### Technologies utilisées
+
+- **Backend** : PHP 8+ (POO, PDO)
+- **Base de données** : MySQL 5.7+
+- **Frontend** : Bootstrap 5, Vanilla JS
+- **Architecture** : MVC sans framework
+- **Sécurité** : CSRF tokens, prepared statements, password hashing
+
+## 🔧 Configuration
+
+### Apache VirtualHost
+
+```apache
+<VirtualHost *:80>
+    ServerName webinar.local
+    DocumentRoot /var/www/html/webinar-management-system/public
+    
+    <Directory /var/www/html/webinar-management-system/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+### Nginx
+
+```nginx
+server {
+    listen 80;
+    server_name webinar.local;
+    root /var/www/html/webinar-management-system/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+    }
+}
+```
+
+## 📊 Captures d'écran
+
+### Dashboard
+![Dashboard](docs/screenshot-dashboard.png)
+
+### Gestion des demandes
+![Webinars List](docs/screenshot-webinars.png)
+
+### Formulaire de création
+![Create Form](docs/screenshot-create.png)
+
+### Rapports
+![Reports](docs/screenshot-reports.png)
+
+## 🛡️ Sécurité
+
+- ✅ Protection CSRF sur tous les formulaires
+- ✅ Requêtes préparées PDO (anti-injection SQL)
+- ✅ Validation et échappement des entrées (anti-XSS)
+- ✅ Mots de passe hashés avec bcrypt
+- ✅ Sessions sécurisées (HttpOnly, Secure)
+- ✅ Journal d'audit complet
+- ✅ Contrôle d'accès basé sur les rôles
+
+**Rapport de vulnérabilités** : Merci d'envoyer un email à security@example.com
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues !
+
+1. Fork le projet
+2. Créer une branche (`git checkout -b feature/AmazingFeature`)
+3. Commit les changements (`git commit -m 'Add AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
+
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour plus de détails.
+
+## 📝 Roadmap
+
+- [ ] Authentification OAuth2
+- [ ] Notifications par email
+- [ ] Intégration Zoom API
+- [ ] Calendrier interactif
+- [ ] Export PDF des rapports
+- [ ] Multi-tenancy
+- [ ] Interface d'administration avancée
+- [ ] Application mobile (React Native)
+
+## 📄 Licence
+
+Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+## 👥 Auteurs
+
+- **Votre Nom** - *Développement initial* - [VotreGitHub](https://github.com/votre-username)
+
+## 🙏 Remerciements
+
+- Bootstrap pour l'interface utilisateur
+- La communauté PHP
+- Tous les contributeurs
+
+## 📞 Support
+
+- 📧 Email : support@example.com
+- 🐛 Issues : [GitHub Issues](https://github.com/votre-username/webinar-management-system/issues)
+- 📚 Documentation : [Wiki](https://github.com/votre-username/webinar-management-system/wiki)
+
+---
+
+**Développé avec ❤️ par [Votre Organisation]**
+EOF
+
+# Créer LICENSE
+cat > LICENSE << 'EOF'
+MIT License
+
+Copyright (c) 2024 Votre Nom
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+EOF
+
+# Créer CONTRIBUTING.md
+cat > CONTRIBUTING.md << 'EOF'
+# Guide de Contribution
+
+Merci de contribuer au Système de Gestion de Webinaires !
+
+## Comment contribuer
+
+1. Forker le projet
+2. Créer une branche pour votre fonctionnalité
+3. Écrire du code propre et commenté
+4. Tester vos modifications
+5. Soumettre une Pull Request
+
+## Standards de code
+
+- Suivre PSR-12 pour PHP
+- Commenter les fonctions complexes
+- Écrire des messages de commit clairs
+
+## Tests
+
+Avant de soumettre, vérifiez que :
+- Le code fonctionne sans erreurs
+- Les fonctionnalités existantes ne sont pas cassées
+- La sécurité est maintenue
+EOF
+
+# Créer database.sql
+cat > database.sql << 'EOF'
+-- Système de Gestion de Webinaires - Schéma de base de données
+-- Version 1.0
+
+CREATE DATABASE IF NOT EXISTS webinar_system 
+CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE webinar_system;
+
+-- Table des utilisateurs
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    role ENUM('Admin', 'Gestionnaire', 'Demandeur') NOT NULL DEFAULT 'Demandeur',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_role (role)
+) ENGINE=InnoDB;
+
+-- Table des langues d'interprétation
+CREATE TABLE languages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(10) UNIQUE NOT NULL,
+    name_fr VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_code (code)
+) ENGINE=InnoDB;
+
+-- Table des webinaires
+CREATE TABLE webinars (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    requester_id INT NOT NULL,
+    title_fr VARCHAR(255) NOT NULL,
+    title_en VARCHAR(255),
+    description_fr TEXT,
+    description_en TEXT,
+    scheduled_date DATETIME,
+    duration INT COMMENT 'Durée en minutes',
+    status ENUM('Soumise', 'En cours', 'Approuvée', 'Rejetée') DEFAULT 'Soumise',
+    webinar_link VARCHAR(500),
+    webinar_password VARCHAR(100),
+    rejection_reason TEXT,
+    zoom_registered_count INT DEFAULT 0,
+    zoom_participant_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_requester (requester_id),
+    INDEX idx_status (status),
+    INDEX idx_date (scheduled_date)
+) ENGINE=InnoDB;
+
+-- Table de liaison many-to-many
+CREATE TABLE webinar_languages (
+    webinar_id INT NOT NULL,
+    language_id INT NOT NULL,
+    PRIMARY KEY (webinar_id, language_id),
+    FOREIGN KEY (webinar_id) REFERENCES webinars(id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Table du journal d'audit
+CREATE TABLE audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id INT,
+    details TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_user (user_id),
+    INDEX idx_entity (entity_type, entity_id),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB;
+
+-- Données initiales - Utilisateurs de test
+-- Mot de passe pour tous : Admin123!
+INSERT INTO users (email, password, first_name, last_name, role) VALUES
+('admin@webinar.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'Système', 'Admin'),
+('gestionnaire@webinar.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Gestionnaire', 'Test', 'Gestionnaire'),
+('demandeur@webinar.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demandeur', 'Test', 'Demandeur');
+
+-- Données initiales - Langues
+INSERT INTO languages (code, name_fr, name_en) VALUES
+('FR', 'Français', 'French'),
+('EN', 'Anglais', 'English'),
+('ES', 'Espagnol', 'Spanish'),
+('DE', 'Allemand', 'German'),
+('AR', 'Arabe', 'Arabic'),
+('ZH', 'Chinois', 'Chinese');
+EOF
+
+# Créer .gitkeep pour uploads
+touch public/uploads/.gitkeep
+
+# Créer un exemple de configuration
+cat > config/database.php.example << 'EOF'
+<?php
+namespace Config;
+
+class Database {
+    private static $instance = null;
+    private $connection;
+    
+    private function __construct() {
+        // Modifier ces valeurs selon votre configuration
+        $host = 'localhost';
+        $dbname = 'webinar_system';
+        $username = 'webinar_user';
+        $password = 'votre_mot_de_passe';
+        
+        try {
+            $this->connection = new \PDO(
+                "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+                $username,
+                $password,
+                [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                    \PDO::ATTR_EMULATE_PREPARES => false
+                ]
+            );
+        } catch (\PDOException $e) {
+            die("Erreur de connexion à la base de données: " . $e->getMessage());
+        }
+    }
+    
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+    
+    public function getConnection() {
+        return $this->connection;
+    }
+}
+EOF
+
+echo ""
+echo "✅ Préparation terminée !"
+echo ""
+echo "📁 Dossier créé : $PROJECT_NAME/"
+echo ""
+echo "🔄 Prochaines étapes :"
+echo "   1. cd $PROJECT_NAME"
+echo "   2. Copiez les fichiers des artifacts Claude dans les dossiers appropriés"
+echo "   3. git init"
+echo "   4. git add ."
+echo "   5. git commit -m 'Initial commit'"
+echo "   6. git remote add origin https://github.com/VOTRE-USERNAME/$PROJECT_NAME.git"
+echo "   7. git push -u origin main"
+echo ""
+echo "📦 Ensuite, créez une release avec un ZIP sur GitHub !"
